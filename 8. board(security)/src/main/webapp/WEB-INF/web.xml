@@ -7,8 +7,8 @@
 	<context-param>
 		<param-name>contextConfigLocation</param-name>
 		<param-value>/WEB-INF/spring/root-context.xml
-    /WEB-INF/spring/security-context.xml
-    </param-value>
+    				 /WEB-INF/spring/security-context.xml  
+    	</param-value>  <!-- 시큐리티 xml 등록  -->
 	</context-param>
 
 	<!-- Creates the Spring Container shared by all Servlets and Filters -->
@@ -53,7 +53,7 @@
     <url-pattern>/*</url-pattern>
   </filter-mapping>
   
-  	<filter>
+  	<filter> <!-- 시큐리티 기본 설정 추가(필터체인) -->
 		<filter-name>springSecurityFilterChain</filter-name>
 		<filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
 	</filter>

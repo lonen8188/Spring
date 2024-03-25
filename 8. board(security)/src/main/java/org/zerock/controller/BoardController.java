@@ -37,7 +37,7 @@ public class BoardController {
 	private BoardService service;
 
 	@GetMapping("/register")
-	@PreAuthorize("isAuthenticated()")
+	@PreAuthorize("isAuthenticated()") //인증된 사용자 이면
 	public void register() {
 
 	}
@@ -86,7 +86,7 @@ public class BoardController {
 	// }
 
 	@PostMapping("/register")
-	@PreAuthorize("isAuthenticated()")
+	@PreAuthorize("isAuthenticated()") //인증된 사용자 이면
 	public String register(BoardVO board, RedirectAttributes rttr) {
 
 		log.info("==========================");

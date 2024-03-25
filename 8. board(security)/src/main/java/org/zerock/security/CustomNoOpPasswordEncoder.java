@@ -13,7 +13,7 @@ public class CustomNoOpPasswordEncoder implements PasswordEncoder {
 		log.warn("before encode :" + rawPassword);
 
 		return rawPassword.toString();
-	}
+	} //
 
 	public boolean matches(CharSequence rawPassword, String encodedPassword) {
 

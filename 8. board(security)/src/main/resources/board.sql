@@ -1,3 +1,6 @@
+create user book_ex identified by book_ex;
+grant connect, dba to book_ex;
+
 -------------------------------------------------------------게시판용
 create sequence seq_board ;--자동 번호 생성
 
@@ -7,10 +10,12 @@ create table tbl_board(
  title nvarchar2(200) not null,
  content nvarchar2(2000) not null,
  writer nvarchar2(50) not null,
- regidate date default sysdate,
+ regdate date default sysdate,
  updatedate date default sysdate
  
 ); --board 테이블 생성
+
+alter table tbl_board rename column regidate to regdate ;  -- 필드명 검색
 
 alter table tbl_board add constraint pk_board primary key(bno);
 --tbl_board 테이블에 규약 이름으로 pk_board를 명명하고 bno를 기본키로 설정
@@ -41,7 +46,7 @@ insert into TBL_BOARD(bno,title,content,writer) values(60,'댓글용제목' , '�
  ------------------------------------------------------------댓글용
  --board객체의 (bno 60~70 사용)
  
-select * from tbl_reply order by rno desc;
+
 
 create table tbl_reply(
 
@@ -54,13 +59,13 @@ create table tbl_reply(
 	
 	);
 
- 	create sequence seq_reply; 
+create sequence seq_reply; 
  	
- 	alter table tbl_reply add constraint pk_reply primary key(rno);
- 	alter table tbl_reply add constraint fk_reply_board foreign key (bno) references tbl_board(bno);
+alter table tbl_reply add constraint pk_reply primary key(rno);
+alter table tbl_reply add constraint fk_reply_board foreign key (bno) references tbl_board(bno);
  	
- 	select * from TBL_REPLY;
-
+select * from TBL_REPLY;
+select * from tbl_reply order by rno desc;
 
 
 alter table tbl_board add (replycnt number default 0);

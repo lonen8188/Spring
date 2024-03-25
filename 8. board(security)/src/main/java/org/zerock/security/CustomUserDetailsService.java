@@ -17,10 +17,11 @@ public class CustomUserDetailsService implements UserDetailsService {
 
 	@Setter(onMethod_ = { @Autowired })
 	private MemberMapper memberMapper;
+	//MemberMapper 타입의 객체를 생성
 
 	@Override
 	public UserDetails loadUserByUsername(String userName) throws UsernameNotFoundException {
-
+		
 		log.warn("Load User By UserName : " + userName);
 
 		// userName means userid
@@ -29,6 +30,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 		log.warn("queried by member mapper: " + vo);
 
 		return vo == null ? null : new CustomUser(vo);
+		// org.zerock.security.domain.CustomUser.java로 리턴 진행
 	} 
 
 }

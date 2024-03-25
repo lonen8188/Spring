@@ -418,7 +418,7 @@ $(document).ready(function () {
         
       });
 
-    
+    /* Ajax spirng security header ... */
     $(document).ajaxSend(function(e, xhr, options) { 
         xhr.setRequestHeader(csrfHeaderName, csrfTokenValue); 
       }); 
@@ -594,7 +594,7 @@ modalModBtn.on("click", function(e){
     
     replyer = '<sec:authentication property="principal.username"/>';   
     
-</sec:authorize>
+	</sec:authorize>
  
     var csrfHeaderName ="${_csrf.headerName}"; 
     var csrfTokenValue="${_csrf.token}";

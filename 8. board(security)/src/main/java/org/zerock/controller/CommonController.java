@@ -38,13 +38,13 @@ public class CommonController {
 
 	@GetMapping("/customLogout")
 	public void logoutGET() {
-
+		// jsp 폼으로 가는 메서드
 		log.info("custom logout");
 	}
 
 	@PostMapping("/customLogout")
 	public void logoutPost() {
-
+		// post에서 넘어와 처리하는 메서드
 		log.info("post custom logout");
 	}
 

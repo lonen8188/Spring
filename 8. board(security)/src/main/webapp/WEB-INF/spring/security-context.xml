@@ -3,83 +3,309 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xmlns:security="http://www.springframework.org/schema/security"
 	xsi:schemaLocation="http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd
-		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd"> <!-- 시큐리티 5.0 제거 -->
 
-
+	<!-- username이나 User라는 용어의 의미는 시큐리티에 내장된 객체가 있음
+	userid는 스프링 시큐리티의 username에 해당함, 일반적으로 사용자의 이름을 username이라고 처리하는 것과 혼동하면 안됨.
+	스프링 시큐리티의 User는 인증 정보와 권한을 가진 객체
+	이를 구분하기 위해서 MemberVO를 이용함
+	인증 -> 권한 -> 인가 -> Provider(존재) -> UserDetailsService
+	 -->
 
 	<bean id="customAccessDenied"
 		class="org.zerock.security.CustomAccessDeniedHandler"></bean>
+	<!-- 로그인시 권한 실패에 대한 org.zerock.security.CustomAccessDeniedHandler.java 객체로 등록하여 사용 -->
 
 	<!-- <bean id="customLoginSuccess" class="org.zerock.security.CustomLoginSuccessHandler"></bean> -->
+	<!-- 로그인 성공에 대한 핸들러 : org.zerock.security.CustomLoginSuccessHandler.java를 객체로 등록하여 사용 -->
+	
 	<!-- <bean id="customPasswordEncoder" class="org.zerock.security.CustomNoOpPasswordEncoder"></bean> -->
+	<!-- 패스워드암호화가 필요없는 클래스 핸들러 :  org.zerock.security.CustomNoOpPasswordEncoder.java -->
+	
+	<bean id="bcryptPasswordEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder" />
+	<!-- 패스워드암호화가 필요한 클래스 핸들러(내장된클래스) : org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder.java
+	boar에서 사용할 tbl_member, tbl_member_auth 테이블 생성 -> test 코드로 사용자 100명, 권한100 등록 MemberTest.java 이용
+	 -->
+	
+	<bean id="customUserDetailsService"	class="org.zerock.security.CustomUserDetailsService"></bean>
+	<!-- 스프링 시큐리티의 여러정보들을 제한적으로 이용하는 단점을 해결
+	org.zerock.security.CustomUserDetailsService.java 파일의 loadUserByUsername 메서드 재정의하여 사용함
+	UserDetails 타입은 getAuthorities(), getPassword(), getUserName()등의 추상 메서드를 가지고 있어, 개발전에 이를 직접 구현 할 것인지
+	UserDetails 인터페이스를 구현 해준 스프링 시큐리티의 여러 하위 클래스를 이용할 것인지 판단해야 됨.
+	현재 프로젝트는 UserDetailsService 인터페이스를 구현체로 이용하는 방식을 활용함
+	-> Mybatis를 이용하는 MemberMapper와 서비스를 작성하여 시큐리티를 연결해서 사용하는 방식으로 진행함.
+	-> org.zerock.domain.MemberVO.java, org.zerock.domain.AuthVO.java 생성
+	-> org.zerock.mapper.MemberMapper.java + MemberMapper.xml 을 이용함
+	-> org.zerock.security.CustomUserDetailsService.java의 loadUserByUsername(userName)메서드 작성
+	  : userName을 받아 MemberVO 객체를 vo로 생성 
+	  : 리턴은 new CustomUser(vo) 진행함.
+	  -> org.zerock.security.domain.CustomUser.java는 extends User를 상속 받음
+	  	: org.springframework.security.core.userdetails.User 
+	 -->
 
-	<bean id="bcryptPasswordEncoder"
-		class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder" />
 
-	<bean id="customUserDetailsService"
-		class="org.zerock.security.CustomUserDetailsService"></bean>
+	<security:http > <!-- 웹 시큐리티 동작 -->
+		<!-- 특정한 URI에 접근할 때 인터셉터를 이용해 접근 제한하는 설정 : security:intercept-url
+		pattern : URI 패턴을 의미
+		access : 권한을 체크 (표현식=JSP화면에서 처리함, 권한명을 의미하는 문자열을 이용함)
+			표현식 auto-config="true", use-expressions="false" 를 변경
+			hasRole([role]), hasAuthority([authority]) : 권한 있으면 true
+			hasAnyRole([role, role2]), hasAnyAuthority([authority]) : 여러 권한 중 하나라도 해당 권한 있으면 true
+			principal : 현재 사용자의 정보를 의미
+			permitAll : 모든 사용자에게 허용
+			denyAll : 모든 사용자에게 거부
+			isAnonymous() : 익명의 사용자의 경우(로그인을 하지 않은 상태도 해당)
+			isAuthenticated() : 인증된 사용자면 true
+			isFullyAuthenticated() : Remember-me(쿠키)로 인증된 것이 아닌 인증된 사용자인 경우 true
+		 -->
+		
+		<security:intercept-url pattern="/sample/all" access="permitAll" /> <!-- 모든 사용자에게 허용 컨트롤러+jsp -->
+		<!-- /sample/all.jsp 에서는  <%@ taglib uri="http://www.springframework.org/security/tags" prefix="sec" %> 필수 
+			<sec:authorize access="isAnonymous()">
+				<a href="/customLogin">로그인</a>
+			</sec:authorize>
+			<sec:authorize access="isAuthenticated()">
+				<a href="/customLogout">로그아웃</a>
+			</sec:authorize>
+		-->		
 
+		<security:intercept-url	pattern="/sample/member" access="hasRole('ROLE_MEMBER')" />  <!-- 맴버 사용자에게 허용  컨트롤러+jsp -->
+ 
+		<security:intercept-url pattern="/sample/admin"	access="hasRole('ROLE_ADMIN')" /> <!-- 관리자 사용자게에 허용  컨트롤러+jsp -->
+		<!-- /sample/admin.jsp 에서는  <%@ taglib uri="http://www.springframework.org/security/tags" prefix="sec" %> 필수
+		<p>principal : <sec:authentication property="principal"/></p>  UserDetailsService에서 반환된 객체 principal은 CustomUser객체 임
+		<p>MemberVO : <sec:authentication property="principal.member"/></p>
+		<p>사용자이름 : <sec:authentication property="principal.member.userName"/></p>
+		<p>사용자아이디 : <sec:authentication property="principal.username"/></p>
+		<p>사용자 권한 리스트  : <sec:authentication property="principal.member.authList"/></p>
+		로 테스트 가능		-->
+		
+		<!-- <security:access-denied-handler error-page="/accessError /> 
+			인터페이스를 구현체를 지정하거나 error-page를 지정할 수 있다. /accessError 접근제한시 보이는 화면 을 처리함. 
+			(컨트롤러 필요 : CommonCotroller.java -> 메서드 /accessError 매개값(auth, model)
+			(accessError.jsp 필요 : model로 에러 메세지를 처리함 : 403에러(Access Denied) 
+			error-page="/accessError 로 처리하면 URI 자체 변화가 없어 직접 구현하는 방법 ref="customAccessDenied"
+		 -->
 
-	<security:http>
+		<security:access-denied-handler ref="customAccessDenied" /> 
+		<!-- 접근 제한이 된 경우 다양한 처리를 하고 싶다면 ref="customAccessDenied"로 처리한다. (쿠키나 세션에 특정한 작업등)
+		org.zerock.security.CustomAccessDeniedHandler.java 생성 및 implements AccessDeniedHandler 구현체 등록
+		 -->
 
-		<security:intercept-url pattern="/sample/all"
-			access="permitAll" />
-
-		<security:intercept-url
-			pattern="/sample/member" access="hasRole('ROLE_MEMBER')" />
-
-		<security:intercept-url pattern="/sample/admin"
-			access="hasRole('ROLE_ADMIN')" />
-
-		<security:access-denied-handler
-			ref="customAccessDenied" />
-
-		<!-- <security:form-login login-page="/customLogin" authentication-success-handler-ref="customLoginSuccess" 
-			/> -->
+		<!-- <security:form-login /> 내장된 폼 로그인 pattern="/sample/member"으로 접속하면 자동으로 내장된 로그인 폼으로 간다.-->
+		 
+		<!-- <security:form-login login-page="/customLogin" authentication-success-handler-ref="customLoginSuccess" />
+		org.zerock.security.CustomLoginSuccessHandler.java 생성 및 implements AuthenticationSuccessHandler 구현체 등록
+		onAuthenticationSuccess 메서드 재정의,  매개값(req, resp, auth), 예외(IO, Servlet) 
+		-->
 
 		<security:form-login login-page="/customLogin" />
+		<!-- 로그인 페이지를 다시 제작하여 제공 org.zerock.controller.CommonController.java
+			get 방식의 /customLogin를 생성, loginInput메서드 (error, logout, model)
+			customLogin.jsp 생성, post(/login)=username, password
+			hidden=_csrf.parameterName(_csrf.token)필수
+			특이점 : /login은 스프링 시큐리티에 내장된 경로임
+		: 로그인 후에는 기본적으로 / 경로로 이동하기 때문에 HomeController에 지정된 home.jsp로 이동됨
+		  home.jsp 코드에 self.location="/board/list"; 로 강제 이동 시킴	
+		-->
+		  
+		<!-- board에 적용하기 
+		1. servlet-context.xml에 시큐리티 네임스페이스 추가 -> 5.0글자 제거
+		
+		2. BoardController.java에 어노테이션 기법으로 적용
+			@PreAuthorize("isAuthenticated()")
+			public void register()
+			
+			@PostMapping("/register")
+			@PreAuthorize("isAuthenticated()")
+			public String register
+			
+			@PreAuthorize("principal.username == #board.writer")
+			@PostMapping("/modify")
+			public String modify
+			
+			@PreAuthorize("principal.username == #writer")
+			@PostMapping("/remove")
+			public String remove
+			
+		3-1. register.jsp  (로그인한 사용자에 대한 이름 자동 기입)
+			<%@ taglib uri="http://www.springframework.org/security/tags" prefix="sec" %>
+			<input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"/>
+			<input class="form-control" name='writer' value='<sec:authentication property="principal.username"/>' readonly="readonly">
+			
+		3-2. get.jsp (로그인 사용자에 대한 사용자이름 일치 파악)
+			<sec:authentication property="principal" var="pinfo"/>
+		        <sec:authorize access="isAuthenticated()">
+			        <c:if test="${pinfo.username eq board.writer}">
+				        <button data-oper='modify' class="btn btn-default">Modify</button>
+			        </c:if>
+	        </sec:authorize>
+	        
+	    3-3. remove에 대한 처리 (컨트롤러에서 작성자의 일치 여부를 파악하여 게시물 제거)
+	    	    
+		4. web.xml에 utf-8 설정
+			<filter> 
+				<filter-name>springSecurityFilterChain</filter-name>
+					<filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
+			</filter>
 
-		<!-- <security:csrf disabled="true"/> -->
+			<filter-mapping>
+				<filter-name>springSecurityFilterChain</filter-name>
+				<url-pattern>/*</url-pattern>
+			</filter-mapping>
+			
+		5. Ajax 처리 (X-CSRF-TOKEN 헤더 정보를 추가 필수)
+		  -> register.jsp ,  modify.jsp, 
+		  		var csrfHeaderName ="${_csrf.headerName}"; 
+  				var csrfTokenValue="${_csrf.token}";
+  				
+		  		$.ajax({
+			      url: '/uploadAjaxAction',
+			      processData: false, 
+			      contentType: false,
+			      beforeSend: function(xhr) {
+			          xhr.setRequestHeader(csrfHeaderName, csrfTokenValue);
+			      },
+			      data:formData,
+			      type: 'POST',
+			      dataType:'json',
+			        success: function(result){
+			          console.log(result); 
+					  showUploadResult(result); //업로드 결과 처리 함수 
+			
+			      }
+			    }); //$.ajax
+		    -> UploadController.java
+		      	@PreAuthorize("isAuthenticated()")
+				@GetMapping("/uploadAjax")
+				public void uploadAjax()
+				
+				@PreAuthorize("isAuthenticated()")
+				@PostMapping("/deleteFile")
+				@ResponseBody
+				public ResponseEntity<String> deleteFile
+		
+		6. 댓글에 Ajax 처리
+		  -> get.jsp
+		  	<%@ taglib uri="http://www.springframework.org/security/tags" prefix="sec" %>
+		  	
+		  	var csrfHeaderName ="${_csrf.headerName}"; 
+			var csrfTokenValue="${_csrf.token}";
+			
+		  	<sec:authorize access="isAuthenticated()">
+    		replyer = '<sec:authentication property="principal.username"/>';   
+			</sec:authorize>
+		  
+		  	$(document).ajaxSend(function(e, xhr, options) { 
+        	xhr.setRequestHeader(csrfHeaderName, csrfTokenValue); 
+      		});
+      		 	
+      	  -> ReplyController.java
+      	  	@PreAuthorize("isAuthenticated()")
+			@PostMapping(value = "/new", consumes = "application/json", produces = { MediaType.TEXT_PLAIN_VALUE })
+			public ResponseEntity<String> create
+			
+      	  	@PreAuthorize("principal.username == #vo.replyer")
+			@RequestMapping(method = { RequestMethod.PUT, RequestMethod.PATCH }, value = "/{rno}", consumes = "application/json")
+			public ResponseEntity<String> modify
+	
+			@PreAuthorize("principal.username == #vo.replyer")
+			@DeleteMapping("/{rno}")
+			public ResponseEntity<String> remove
+	
+		-->
 
-		<security:logout logout-url="/customLogout"
-			invalidate-session="true" />
+		<!-- <security:csrf disabled="true"/> csrf 세션을 통해 보관하는데 테스트용은 비활성화 -->
 
-		<security:remember-me
-			data-source-ref="dataSource" token-validity-seconds="604800" />
+		<security:logout logout-url="/customLogout" invalidate-session="true" />
+		<!-- security:logout 자체적으로 로그아웃 하는 기능인데 경로 및 get-post방식이 필요함 
+		  org.zerock.controller.CommonController.java , get방식 메서드 logoutGET()
+		 -> customLoginout.jsp (post -> /customLogout 호출
+		 -> post로 처리 logoutPost 메서드 실행 
+		1. header.jsp (로그인, 로그아웃 적용)	 
+		<%@ taglib uri="http://www.springframework.org/security/tags" prefix="sec" %>  
+		
+		<sec:authorize access="isAuthenticated()">
+			<li><a href="/customLogout"><i class="fa fa-sign-out fa-fw"></i>Logout</a></li>
+		</sec:authorize>
+		
+		<sec:authorize access="isAnonymous()">
+			<li><a href="/customLogin"><i class="fa fa-sign-out fa-fw"></i>Login</a></li>
+		</sec:authorize> 
+		 
+		2. 로그아웃 페이지 customLogout.jsp
+			<input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}" />
+			<script>
+				$(".btn-success").on("click", function(e){
+					e.preventDefault();
+					$("form").submit();
+				});
+					<c:if test="${param.logout != null}">
+						<script>
+							$(document).ready(function(){
+								alert("로그아웃 하였습니다.");
+							});
+						</script>
+					</c:if>
+			</script> 
+		-->
 
-		<security:logout logout-url="/customLogout"
-			invalidate-session="true" delete-cookies="remember-me,JSESSION_ID" />
+		<security:remember-me data-source-ref="dataSource" token-validity-seconds="604800" />
+		<!-- 쿠키를 이용한 자동 로그인 설정 (시큐리티에 내장된 기능)
+			db : persistent_logins 테이블 생성 (username, series, token, last_used)
+		-->
+
+		<security:logout logout-url="/customLogout"	invalidate-session="true" delete-cookies="remember-me,JSESSION_ID" />
+		<!-- 로그아웃시 쿠키 삭젱 기능 추가 -->
 
 
-	</security:http>
+	</security:http>  <!-- 웹 시큐리티 동작 설정 끝 -->
+ 
 
 
-
-	<!-- <security:authentication-manager> <security:authentication-provider> 
-		<security:user-service> <security:user name="member" password="{noop}member" 
-		authorities="ROLE_MEMBER"/> <security:user name="admin" password="{noop}admin" 
-		authorities="ROLE_MEMBER, ROLE_ADMIN"/> </security:user-service> </security:authentication-provider> 
+	<!-- <security:authentication-manager> 
+			<security:authentication-provider> 
+				<security:user-service> 
+					<security:user name="member" password="{noop}member" authorities="ROLE_MEMBER"/> 
+					<security:user name="admin" password="{noop}admin" authorities="ROLE_MEMBER, ROLE_ADMIN"/> 
+				</security:user-service> 
+			</security:authentication-provider> 
 		</security:authentication-manager> -->
+		<!-- {noop}은 bcryptPasswordEncoder 무효 처리 -->
 
-	<!-- <security:authentication-manager> <security:authentication-provider> 
-		<security:jdbc-user-service data-source-ref="dataSource" /> <security:jdbc-user-service 
-		data-source-ref="dataSource" users-by-username-query="select userid , userpw 
-		, enabled from tbl_member where userid = ? " authorities-by-username-query="select 
-		userid, auth from tbl_member_auth where userid = ? " /> <security:password-encoder 
-		ref="customPasswordEncoder" /> <security:password-encoder ref="bcryptPasswordEncoder" 
-		/> </security:authentication-provider> </security:authentication-manager> -->
+	<!-- jdbc를 이용한 로그인 시큐리티 설정  -->
+	<!-- https://github.com/spring-projects/spring-security/blob/main/core/src/main/java/org/springframework/security/provisioning/JdbcUserDetailsManager.java -->
+	<!-- sql 파일 참조 : users(username, password), authorities(username, authority) 테이블에 더미데이터 3개 이상 추가 
+	authorities테이블에 : ROLE_USER, ROLE_MANAGER, ROLE_ADMIN 등록 
+	-->
+	
+	<!-- <security:authentication-manager> 
+			<security:authentication-provider> 
+				<security:jdbc-user-service data-source-ref="dataSource" /> 
+					<security:jdbc-user-service	data-source-ref="dataSource" 
+					users-by-username-query="select userid , userpw, enabled from tbl_member where userid = ? " 
+					authorities-by-username-query="select userid, auth from tbl_member_auth where userid = ? " />
+					boar에서 사용할 member와 auth 테이블 테스트
+					 -->
+				 <!--	<security:password-encoder	ref="customPasswordEncoder" />  위에서 만든 암호비활성화 빈을 활용  --> 
+				 <!--	<security:password-encoder ref="bcryptPasswordEncoder" /> 위에서 만든 암호화 빈을 활용--> 
+			<!-- </security:authentication-provider> 
+		</security:authentication-manager> --> 
 
 
-	<security:authentication-manager>
+	<security:authentication-manager>   <!-- 시큐리티 인증 관리자  -->
+ 
+		<security:authentication-provider user-service-ref="customUserDetailsService"> <!-- 인증 제공자는 실제 인증 작업을 진행한다. p617--> 
+			<!-- 이때 인증된 정보에는 권한에 대한 정보를 같이 전달함 : UserDetailsService 인터페이스의 구현체는 실제로 사용자의 정보와 사용자가 가진 정보를 처리해서 반환 함 -->
+			<!-- 개발자가 스프링 시큐리티를 커스터마이징 하는 방식은 2개 
+			 AuthenticationProvider : 직접 구현하는 방식 (새로운 프로토콜, 인증 구현방식)
+			 UserDetailService : 실제 처리를 담당하는 방식 (대부분 반자동화로 구현) -->
+			 
 
-		<security:authentication-provider
-			user-service-ref="customUserDetailsService">
-
-			<security:password-encoder
-				ref="bcryptPasswordEncoder" />
+			<security:password-encoder	ref="bcryptPasswordEncoder" />
 
 		</security:authentication-provider>
 
-	</security:authentication-manager>
+	</security:authentication-manager> <!-- 인증 관리자 종료 -->
 
 </beans>
