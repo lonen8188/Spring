@@ -39,7 +39,6 @@
 
 
 2. spring-test 코드 주입
-
 	<dependency>
 		<!-- spring-test 코드 주입 -> log를 작성 log4j를 log4j2로 변경-->
 		<groupId>org.springframework</groupId>
@@ -49,7 +48,6 @@
 
 
 4. spring은 system.out.println안씀 -> log.info (log4j2) -> resources 폴더에 log4.xml 삭제 -> log4j2.xml 교체
-
 	<dependency> 
 		<!-- log4j2 활성화 : resources log4j2.xml 변경 https://logging.apache.org/log4j/2.x/maven-artifacts.html -->
 		    <groupId>org.apache.logging.log4j</groupId>
@@ -64,7 +62,6 @@
 
 
 6. junit 버전 상향 137행
-   
 	<dependency>
 		<!-- Test -->
 		<!-- 메스드별 테스트 진행용 -->
