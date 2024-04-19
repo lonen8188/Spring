@@ -25,7 +25,7 @@
 7. 프로젝트에 ojdbc8.jar 연결 
    -> 프로젝트 우클릭 -> Build Path -> Libraries -> Classpath : add 
    -> Web DeploymentAssembly 확인
-
+<pre>
 프로젝트 기본 셋팅
 1. lombok을 프로젝트에 적용 (35행)
 <dependency>
@@ -80,7 +80,7 @@
 </plugin>
 
 
-
+</pre>
 
 
 
