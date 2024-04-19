@@ -27,6 +27,7 @@
    -> Web DeploymentAssembly 확인
 
 프로젝트 기본 셋팅
+
 	1. lombok을 프로젝트에 적용 (35행)
 	<dependency>
 	<!-- lombok 실행 코드 주입 -->
