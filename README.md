@@ -26,7 +26,7 @@
    -> 프로젝트 우클릭 -> Build Path -> Libraries -> Classpath : add 
    -> Web DeploymentAssembly 확인
 
-`프로젝트 기본 셋팅
+프로젝트 기본 셋팅
 1. lombok을 프로젝트에 적용 (35행)
 <dependency>
 <!-- lombok 실행 코드 주입 -->
@@ -77,7 +77,7 @@
 	<groupId>org.apache.maven.plugins</groupId>
 	<artifactId>maven-war-plugin</artifactId>
 	<version>3.3.2</version>
-</plugin>	`
+</plugin>
 
 
 
